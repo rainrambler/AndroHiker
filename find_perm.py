@@ -7,6 +7,10 @@ import sys
 
 set_log("ERROR")
 
+def find_permissions_in_dir(perms, dir_name: str):
+    for one_perm in perms:
+        find_permission_in_dir(one_perm, dir_name)
+
 def find_permission_in_dir(perm_name: str, dir_name: str):
     files = find_files_with_extension(dir_name, ".apk")
     for apk_file in files:
@@ -42,7 +46,7 @@ def get_apk_permissions(apk_path: str):
         
         return permissions
     except Exception as e:
-        print(f"分析APK时出错: {e}")
+        print(f"分析APK: {apk_path} 时出错: {e}")
         return []
 
 def get_permissions_of_apk(apk_name: str):
@@ -53,8 +57,8 @@ def get_permissions_of_apk(apk_name: str):
 def main():
     # 检查命令行参数
     if len(sys.argv) != 2:
-        print("用法: python apk_permissions.py <APK文件路径>")
-        print("示例: python apk_permissions.py app.apk")
+        print("用法: python find_perm.py <APK文件路径>")
+        print("示例: python find_perm.py app.apk")
         sys.exit(1)
     
     apk_path = sys.argv[1]
