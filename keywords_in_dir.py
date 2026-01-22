@@ -3,7 +3,7 @@ import sys
 import argparse
 from pathlib import Path
 
-def find_lines_with_keywords(file_path, keywords):
+def find_lines_with_keywords(file_path, keywords, case_sensitive=True):
     """
     读取文件并查找包含所有关键字的行
     """
@@ -11,23 +11,34 @@ def find_lines_with_keywords(file_path, keywords):
         with open(file_path, 'r', encoding='utf-8') as file:
             for line_num, line in enumerate(file, 1):
                 line = line.rstrip('\n')  # 移除行尾换行符
+                original_line = line  # 保存原始行用于显示
+                
+                # 根据大小写敏感设置处理
+                search_line = line if case_sensitive else line.lower()
+                search_keywords = keywords if case_sensitive else [k.lower() for k in keywords]
+                
                 # 检查该行是否包含所有关键字
-                if all(keyword in line for keyword in keywords):
-                    print(f"{file_path}:{line_num}: {line}")
+                if all(keyword in search_line for keyword in search_keywords):
+                    print(f"{file_path}:{line_num}: {original_line}")
     except UnicodeDecodeError:
         # 如果utf-8编码失败，尝试其他编码
         try:
             with open(file_path, 'r', encoding='gbk') as file:
                 for line_num, line in enumerate(file, 1):
                     line = line.rstrip('\n')
-                    if all(keyword in line for keyword in keywords):
-                        print(f"{file_path}:{line_num}: {line}")
+                    original_line = line
+                    
+                    search_line = line if case_sensitive else line.lower()
+                    search_keywords = keywords if case_sensitive else [k.lower() for k in keywords]
+                    
+                    if all(keyword in search_line for keyword in search_keywords):
+                        print(f"{file_path}:{line_num}: {original_line}")
         except Exception as e:
-            print(f"警告: 无法读取文件 {file_path} (编码问题): {e}", file=sys.stderr)
+            print(f"警告: 无法读取文件 {file_path} (编码问题) {e}", file=sys.stderr)
     except Exception as e:
         print(f"警告: 读取文件 {file_path} 时出错: {e}", file=sys.stderr)
 
-def search_files(directory, keywords):
+def search_files(directory, keywords, case_sensitive=True):
     """
     递归遍历目录，查找所有.txt文件
     """
@@ -44,6 +55,7 @@ def search_files(directory, keywords):
     
     print(f"正在搜索路径: {directory}")
     print(f"关键字: {', '.join(keywords)}")
+    print(f"大小写敏感: {'是' if case_sensitive else '否'}")
     print("-" * 50)
     
     found_files = 0
@@ -58,7 +70,10 @@ def search_files(directory, keywords):
         try:
             with open(file_path, 'r', encoding='utf-8') as file:
                 for line in file:
-                    if all(keyword in line for keyword in keywords):
+                    search_line = line if case_sensitive else line.lower()
+                    search_keywords = keywords if case_sensitive else [k.lower() for k in keywords]
+                    
+                    if all(keyword in search_line for keyword in search_keywords):
                         lines_found_in_file += 1
         except:
             pass
@@ -67,7 +82,7 @@ def search_files(directory, keywords):
             found_lines += lines_found_in_file
             print(f"\n在文件 {file_path} 中找到 {lines_found_in_file} 个匹配行:")
             # 实际打印匹配的行
-            find_lines_with_keywords(file_path, keywords)
+            find_lines_with_keywords(file_path, keywords, case_sensitive)
     
     print("-" * 50)
     print(f"搜索完成!")
@@ -79,12 +94,14 @@ def main():
     parser = argparse.ArgumentParser(description='在文本文件中搜索包含所有关键字的行')
     parser.add_argument('path', help='要搜索的目录或文件路径')
     parser.add_argument('keywords', nargs='+', help='要搜索的关键字（一个或多个）')
+    parser.add_argument('-i', '--ignore-case', action='store_true', 
+                        help='忽略大小写（默认: 大小写敏感）')
     
     # 解析命令行参数
     args = parser.parse_args()
     
-    # 开始搜索
-    search_files(args.path, args.keywords)
+    # 开始搜索，case_sensitive为True表示大小写敏感
+    search_files(args.path, args.keywords, case_sensitive=not args.ignore_case)
 
 if __name__ == "__main__":
     # 如果没有命令行参数，使用交互模式
@@ -109,5 +126,9 @@ if __name__ == "__main__":
             
         keywords = keywords_input.split()
         
+        # 询问大小写敏感选项
+        case_sensitive_input = input("是否大小写敏感? (y/n, 默认: y): ").strip().lower()
+        case_sensitive = not (case_sensitive_input == 'n' or case_sensitive_input == 'no')
+        
         # 开始搜索
-        search_files(path, keywords)
+        search_files(path, keywords, case_sensitive)
